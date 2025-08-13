@@ -75,7 +75,8 @@ const PesquisarProduto = (function() {
         detailsHTML += _createDetailItem('Estoque', product.estoque || '0');
         detailsHTML += _createDetailItem('Situação', product.situacao ? '<span class="text-green-600 font-semibold">Ativo</span>' : '<span class="text-red-600 font-semibold">Inativo</span>');
         detailsHTML += _createDetailItem('Marca', product.marca);
-        detailsHTML += _createDetailItem('Localização', product.localizacao);
+        // CORREÇÃO: Garante que a localização seja exibida mesmo se estiver vazia.
+        detailsHTML += _createDetailItem('Localização', product.localizacao || 'Não informado');
         detailsHTML += '</div>';
 
         // Seção de métricas (se existirem)
