@@ -71,12 +71,14 @@ const PesquisarProduto = (function() {
 
         // Seções de detalhes gerais
         detailsHTML += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">';
-        detailsHTML += _createDetailItem('Preço', (product.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
-        detailsHTML += _createDetailItem('Estoque', product.estoque || '0');
         detailsHTML += _createDetailItem('Situação', product.situacao ? '<span class="text-green-600 font-semibold">Ativo</span>' : '<span class="text-red-600 font-semibold">Inativo</span>');
-        detailsHTML += _createDetailItem('Marca', product.marca);
-        // CORREÇÃO: Garante que a localização seja exibida mesmo se estiver vazia.
+        detailsHTML += _createDetailItem('Marca', product.marca || 'Não informado');
+        detailsHTML += _createDetailItem('Preço', (product.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
         detailsHTML += _createDetailItem('Localização', product.localizacao || 'Não informado');
+        detailsHTML += _createDetailItem('Estoque Atual', product.estoque ?? '0');
+        detailsHTML += _createDetailItem('Aguardando Chegar', product.aguardandoChegar ?? '0');
+        detailsHTML += _createDetailItem('Estoque Mín / Máx', `${product.estoque_minimo ?? 0} / ${product.estoque_maximo ?? 0}`);
+        detailsHTML += _createDetailItem('Vendas (90 dias)', product.vendas_ultimos_90_dias ?? '0');
         detailsHTML += '</div>';
 
         // Seção de métricas (se existirem)
