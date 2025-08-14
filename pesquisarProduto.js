@@ -1,20 +1,25 @@
-// pesquisarProduto.js
-// Este módulo gerencia a lógica e a renderização da tela de pesquisa de produtos.
-
+/**
+ * @module PesquisarProduto
+ * @description Módulo para gerenciar a interface da página de pesquisa de produtos.
+ * Controla a renderização da lista de produtos, a exibição de detalhes e as interações do usuário,
+ * como cliques e pré-visualização de imagens.
+ */
 const PesquisarProduto = (function() {
-    // --- Variáveis de estado e configuração ---
+    // --- Variáveis de estado e configuração privadas ---
     let _allProducts = [];
     let _dom = {};
     let _utils = {};
     let _activeProductId = null;
-    let _tooltipHideTimeout = null;
 
     /**
      * Renderiza os detalhes de um produto específico no painel direito.
      * @param {object} product - O objeto do produto a ser exibido.
      */
     function _renderProductDetails(product) {
-        if (!_dom.product_details || !_utils.createDetailItem) return;
+        if (!_dom.product_details || !_utils.createDetailItem) {
+            console.error("DOM ou utilitários não inicializados para renderizar detalhes do produto.");
+            return;
+        }
 
         _dom.product_details.innerHTML = `
             <h2 class="text-2xl font-bold text-gray-800 mb-2">${product.descricao}</h2>
@@ -34,7 +39,7 @@ const PesquisarProduto = (function() {
             <div class="mt-8">
                 <h3 class="text-lg font-semibold text-gray-700 mb-4">Imagens do Produto</h3>
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    ${(product.url_imagens_externas && product.url_imagens_externas.length > 0 && product.url_imagens_externas[0]) ? 
+                    ${(product.url_imagens_externas && product.url_imagens_externas.length > 0) ? 
                         product.url_imagens_externas.map(url => `
                             <a href="${url}" target="_blank" rel="noopener noreferrer">
                                 <img src="${url}" alt="Imagem do produto" class="w-full h-32 object-cover rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300" 
@@ -51,7 +56,7 @@ const PesquisarProduto = (function() {
     }
 
     /**
-     * Limpa o painel de detalhes e mostra o placeholder.
+     * Limpa o painel de detalhes e mostra a mensagem de placeholder.
      */
     function _clearDetails() {
         if (!_dom.product_details || !_dom.details_placeholder) return;
@@ -60,13 +65,15 @@ const PesquisarProduto = (function() {
     }
 
     /**
-     * Mostra uma pré-visualização ampliada da imagem, ajustando sua posição para caber na tela.
-     * @param {MouseEvent} event - O evento do mouse (mouseover).
+     * Mostra uma pré-visualização ampliada da imagem do produto.
+     * A posição do tooltip é ajustada dinamicamente para garantir que ele permaneça visível na tela.
+     * @param {MouseEvent} event - O evento do mouse (mouseover) que acionou a função.
      */
     function _showImagePreview(event) {
         const imgElement = event.target;
         const imageUrl = imgElement.dataset.imageUrl;
 
+        // Não exibe a pré-visualização para a imagem placeholder
         if (!imageUrl || imageUrl.includes('placehold.co')) return;
 
         if (_dom.customProductTooltip) {
@@ -76,30 +83,34 @@ const PesquisarProduto = (function() {
             
             _dom.customProductTooltip.style.left = `${rect.right + 15}px`;
 
+            // Torna o tooltip temporariamente visível fora da tela para calcular sua altura
             _dom.customProductTooltip.style.visibility = 'hidden';
             _dom.customProductTooltip.classList.remove('hidden');
             const tooltipHeight = _dom.customProductTooltip.offsetHeight;
             
             let topPos = rect.top;
 
+            // Ajusta a posição vertical se o tooltip ultrapassar a borda inferior da janela
             if (topPos + tooltipHeight > window.innerHeight) {
                 topPos = window.innerHeight - tooltipHeight - 10;
             }
 
+            // Garante que o tooltip não suba acima do topo da janela
             if (topPos < 10) {
                 topPos = 10;
             }
 
             _dom.customProductTooltip.style.top = `${topPos}px`;
             
+            // Torna o tooltip visível com uma transição de fade-in
             _dom.customProductTooltip.style.visibility = 'visible';
-            void _dom.customProductTooltip.offsetWidth; 
+            void _dom.customProductTooltip.offsetWidth; // Força um reflow para a transição funcionar
             _dom.customProductTooltip.style.opacity = '1';
         }
     }
 
     /**
-     * Esconde a pré-visualização da imagem.
+     * Esconde a pré-visualização da imagem do produto com uma transição suave.
      */
     function _hideImagePreview() {
         if (_dom.customProductTooltip) {
@@ -109,12 +120,13 @@ const PesquisarProduto = (function() {
                     _dom.customProductTooltip.classList.add('hidden');
                     _dom.customProductTooltip.innerHTML = '';
                 }
-            }, 200);
+            }, 200); // O tempo deve corresponder à duração da transição CSS
         }
     }
     
     /**
-     * Manipula o clique em um item da lista de produtos.
+     * Manipula o evento de clique em um item da lista de produtos.
+     * Atualiza o estado visual e renderiza os detalhes do produto selecionado.
      * @param {MouseEvent} event - O evento de clique.
      */
     function _handleProductClick(event) {
@@ -124,6 +136,7 @@ const PesquisarProduto = (function() {
         const productId = productItem.dataset.productId;
         _activeProductId = productId;
 
+        // Atualiza a classe 'active' para destacar o item selecionado
         document.querySelectorAll('.product-item').forEach(item => item.classList.remove('active'));
         productItem.classList.add('active');
 
@@ -133,21 +146,47 @@ const PesquisarProduto = (function() {
         }
     }
 
-    // --- Funções Públicas ---
+    /**
+     * Adiciona os listeners de eventos ao container da lista de produtos.
+     * Utiliza delegação de eventos para otimizar o desempenho.
+     */
+    function _bindEvents() {
+        if (_dom.product_list_container) {
+            _dom.product_list_container.addEventListener('click', _handleProductClick);
+            
+            _dom.product_list_container.addEventListener('mouseover', (event) => {
+                if (event.target.classList.contains('product-list-item-img')) {
+                    _showImagePreview(event);
+                }
+            });
+            _dom.product_list_container.addEventListener('mouseout', (event) => {
+                if (event.target.classList.contains('product-list-item-img')) {
+                    _hideImagePreview();
+                }
+            });
+        }
+    }
+
+    // --- Funções Públicas Expostas pelo Módulo ---
     
     /**
      * Renderiza a lista de produtos no painel esquerdo.
      * @param {Array<object>} products - A lista de produtos a ser renderizada.
+     * @param {Array<object>} allProductsData - A lista completa de todos os produtos para referência.
      */
-    function render(products) {
+    function render(products, allProductsData) {
         if (!_dom.product_list_container) return;
+        
+        // Atualiza a referência interna de todos os produtos, caso tenha mudado
+        _allProducts = allProductsData;
+
         if (!products || products.length === 0) {
             _dom.product_list_container.innerHTML = `<div class="p-4 text-center text-gray-500">Nenhum produto encontrado.</div>`;
             _clearDetails();
             return;
         }
 
-        let listHtml = products.map(product => {
+        const listHtml = products.map(product => {
             const imageUrl = product.url_imagens_externas && product.url_imagens_externas[0] 
                 ? product.url_imagens_externas[0] 
                 : 'https://placehold.co/50x50/e2e8f0/64748b?text=?';
@@ -171,33 +210,23 @@ const PesquisarProduto = (function() {
     }
 
     /**
-     * Inicializa o módulo, cacheando elementos do DOM e configurando listeners.
+     * Inicializa o módulo.
      * @param {object} config - Objeto de configuração.
+     * @param {object} config.domElements - Referências aos elementos do DOM necessários.
+     * @param {object} config.utilities - Funções utilitárias compartilhadas.
      */
     function init(config) {
-        _allProducts = config.allProducts;
         _dom = config.domElements;
         _utils = config.utilities;
-
-        if (_dom.product_list_container) {
-            _dom.product_list_container.addEventListener('click', _handleProductClick);
-
-            _dom.product_list_container.addEventListener('mouseover', (event) => {
-                if (event.target.classList.contains('product-list-item-img')) {
-                    _showImagePreview(event);
-                }
-            });
-            _dom.product_list_container.addEventListener('mouseout', (event) => {
-                if (event.target.classList.contains('product-list-item-img')) {
-                    _hideImagePreview();
-                }
-            });
-        }
+        _bindEvents();
     }
 
-    // Expõe as funções públicas
+    // Expõe as funções públicas para serem acessadas de fora do módulo
     return {
         init,
         render
     };
 })();
+
+// Exporta o módulo para ser utilizado com 'import' no arquivo principal
+export default PesquisarProduto;
