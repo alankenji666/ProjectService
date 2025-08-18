@@ -1,115 +1,191 @@
-// utils.js
+const PesquisarProduto = (function() {
+    // --- Variáveis de estado e configuração ---
+    let _allProducts = [];
+    let _dom = {};
+    let _utils = {};
+    let _activeProductId = null;
 
-/**
- * Implementa a técnica de debounce para otimizar o desempenho de funções que são chamadas repetidamente.
- * @param {Function} func A função a ser "debouced".
- * @param {number} delay O tempo de atraso em milissegundos.
- * @returns {Function} A função debounced.
- */
-export function debounce(func, delay) {
-    let timeout;
-    return function(...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), delay);
+    /**
+     * Renderiza os detalhes de um produto específico no painel direito.
+     * @param {object} product - O objeto do produto a ser exibido.
+     */
+    function _renderProductDetails(product) {
+        if (!_dom.product_details || !_utils.createDetailItem) return;
+
+        _dom.product_details.innerHTML = `
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">${product.descricao}</h2>
+            <p class="text-sm text-gray-500 mb-6">Código: ${product.codigo}</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                ${_utils.createDetailItem('Preço', (product.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))}
+                ${_utils.createDetailItem('Unidade', product.unidade || 'N/A')}
+                ${_utils.createDetailItem('Estoque Atual', product.estoque, 'font-bold')}
+                ${_utils.createDetailItem('Estoque Mínimo', product.estoque_minimo)}
+                ${_utils.createDetailItem('Estoque Máximo', product.estoque_maximo)}
+                ${_utils.createDetailItem('Localização', product.localizacao || 'N/A')}
+                ${_utils.createDetailItem('Grupo de Tags', product.grupo_de_tags_tags?.join(', ') || 'N/A')}
+                ${_utils.createDetailItem('Vendas (90d)', product.vendas_ultimos_90_dias || '0')}
+            </div>
+            
+            <div class="mt-8">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Imagens do Produto</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    ${(product.url_imagens_externas && product.url_imagens_externas.length > 0) ? 
+                        product.url_imagens_externas.map(url => `
+                            <a href="${url}" target="_blank" rel="noopener noreferrer">
+                                <img src="${url}" alt="Imagem do produto" class="w-full h-32 object-cover rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300" 
+                                     onerror="this.onerror=null;this.src='https://placehold.co/150x150/e2e8f0/64748b?text=?';">
+                            </a>
+                        `).join('') :
+                        '<p class="text-gray-500 col-span-full">Nenhuma imagem disponível.</p>'
+                    }
+                </div>
+            </div>
+        `;
+        _dom.details_placeholder.classList.add('hidden');
+        _dom.product_details.classList.remove('hidden');
+    }
+
+    /**
+     * Limpa o painel de detalhes e mostra o placeholder.
+     */
+    function _clearDetails() {
+        if (!_dom.product_details || !_dom.details_placeholder) return;
+        _dom.product_details.classList.add('hidden');
+        _dom.details_placeholder.classList.remove('hidden');
+    }
+    
+    /**
+     * Manipula o clique em um item da lista de produtos.
+     * @param {MouseEvent} event - O evento de clique.
+     */
+ function _handleProductClick(event) {
+    const productItem = event.target.closest('.product-item');
+    if (!productItem || !_allProducts || _allProducts.length === 0) {
+        console.error("Erro: _allProducts está vazio ou não definido.");
+        return;
+    }
+
+    const productId = productItem.dataset.productId;
+    _activeProductId = productId;
+
+    // Remove a classe 'active' de todos os itens e a adiciona ao item clicado
+    document.querySelectorAll('.product-item').forEach(item => item.classList.remove('active'));
+    productItem.classList.add('active');
+
+    const product = _allProducts.find(p => String(p.id) === String(productId));
+    if (product) {
+        _renderProductDetails(product);
+    } else {
+        console.error(`Produto com ID ${productId} não encontrado em _allProducts.`);
+    }
+}
+
+    // --- Funções Públicas ---
+    
+    /**
+     * Renderiza a lista de produtos no painel esquerdo.
+     * @param {Array<object>} products - A lista de produtos a ser renderizada.
+     */
+    function render(products) {
+        if (!_dom.product_list_container) return;
+        if (!products || products.length === 0) {
+            _dom.product_list_container.innerHTML = `<div class="p-4 text-center text-gray-500">Nenhum produto encontrado.</div>`;
+            _clearDetails();
+            return;
+        }
+
+        let listHtml = products.map(product => {
+            const imageUrl = product.url_imagens_externas && product.url_imagens_externas[0] 
+                ? product.url_imagens_externas[0] 
+                : 'https://placehold.co/50x50/e2e8f0/64748b?text=?';
+            const isActive = String(product.id) === String(_activeProductId) ? 'active' : '';
+
+            return `
+                <div class="product-item flex items-center p-3 border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${isActive}" data-product-id="${product.id}">
+                    <img src="${imageUrl}" 
+                         alt="${product.descricao || 'Imagem do produto'}" 
+                         class="product-list-item-img" 
+                         data-image-url="${imageUrl}"
+                         onerror="this.onerror=null;this.src='https://placehold.co/50x50/e2e8f0/64748b?text=?';">
+                    <div class="flex-grow overflow-hidden">
+                        <h3 class="font-semibold text-gray-800 text-sm truncate" title="${product.descricao || ''}">${product.descricao || 'Sem descrição'}</h3>
+                        <p class="text-xs text-gray-500">${product.codigo || 'Sem código'}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        _dom.product_list_container.innerHTML = listHtml;
+    }
+
+    /**
+     * Inicializa o módulo, cacheando elementos do DOM e configurando listeners.
+     * @param {object} config - Objeto de configuração.
+     */
+    function init(config) {
+        console.log("Inicializando PesquisarProduto com config:", config);
+        _allProducts = config.allProducts;
+        _dom = config.domElements;
+        _utils = config.utilities;
+
+        if (!_allProducts || _allProducts.length === 0) {
+            console.warn("Aviso: _allProducts está vazio ou não foi passado corretamente.");
+        }
+
+        if (_dom.product_list_container) {
+            // Listener para cliques nos itens da lista
+            _dom.product_list_container.addEventListener('click', _handleProductClick);
+
+            // Listener para pré-visualização de imagem (usando delegação de eventos)
+            _dom.product_list_container.addEventListener('mouseover', (event) => {
+                if (event.target.classList.contains('product-list-item-img')) {
+                    _utils.showImagePreview(event);
+                }
+            });
+            _dom.product_list_container.addEventListener('mouseout', (event) => {
+                if (event.target.classList.contains('product-list-item-img')) {
+                    _utils.hideImagePreview();
+                }
+            });
+        }
+    }
+
+    // Expõe as funções públicas
+    return {
+        init,
+        render
     };
-}
+})();
 
-/**
- * Verifica se uma data é um fim de semana (sábado ou domingo).
- * @param {Date} date Objeto Date.
- * @returns {boolean} True se for fim de semana, false caso contrário.
- */
-export function isWeekend(date) {
-    const day = date.getDay();
-    return day === 0 || day === 6; // 0 = Domingo, 6 = Sábado
-}
+async function init() {
+    _cacheDomElements();
+    _bindEvents();
+    _setDefaultDateFilters();
 
-/**
- * Adiciona um número de dias úteis a uma data.
- * @param {Date} startDate A data inicial.
- * @param {number} days O número de dias úteis a adicionar.
- * @returns {Date} A nova data após adicionar os dias úteis.
- */
-export function addBusinessDays(startDate, days) {
-    const date = new Date(startDate.getTime()); 
-    let addedDays = 0;
-    while (addedDays < days) {
-        date.setDate(date.getDate() + 1); 
-        if (!isWeekend(date)) { // Usa a função isWeekend exportada
-            addedDays++; 
+    try {
+        await _fetchData(); // Aguarde o carregamento dos dados
+        if (typeof PesquisarProduto !== 'undefined') {
+            PesquisarProduto.init({
+                allProducts: _allProducts, // Use _allProducts, que é preenchido no _fetchData
+                domElements: {
+                    product_list_container: document.getElementById('product-list-container'),
+                    product_details_container: document.getElementById('product-details-container'),
+                    details_placeholder: document.getElementById('details-placeholder'),
+                    product_details: document.getElementById('product-details')
+                },
+                utilities: {
+                    createDetailItem: createDetailItem,
+                    showImagePreview: _showImagePreview,
+                    hideImagePreview: _hideImagePreview
+                }
+            });
+        } else {
+            console.error("Erro: Módulo PesquisarProduto não foi carregado corretamente.");
+            _showMessageModal("Erro de Carregamento", "Não foi possível carregar o módulo de pesquisa de produtos.");
         }
+    } catch (error) {
+        console.error("Erro ao inicializar a aplicação:", error);
     }
-    return date;
 }
 
-/**
- * Calcula a diferença em dias úteis entre duas datas.
- * Retorna um número positivo se endDate for depois de startDate, negativo se antes.
- * @param {Date} startDate A data de início.
- * @param {Date} endDate A data de fim.
- * @returns {number} A diferença em dias úteis.
- */
-export function getBusinessDaysDifference(startDate, endDate) {
-    let count = 0;
-    const current = new Date(startDate.getTime());
-    const end = new Date(endDate.getTime());
-
-    current.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
-
-    if (current > end) {
-        return -getBusinessDaysDifference(endDate, startDate); // Usa a função getBusinessDaysDifference recursivamente
-    }
-
-    if (current.getTime() === end.getTime()) {
-        return 0;
-    }
-
-    while (current < end) { 
-        if (!isWeekend(current)) { // Usa a função isWeekend exportada
-            count++;
-        }
-        current.setDate(current.getDate() + 1);
-    }
-    return count;
-}
-
-/**
- * Formata um número de CNPJ/CPF.
- * @param {number|string} value O número do CNPJ/CPF.
- * @returns {string} O CNPJ/CPF formatado.
- */
-export function formatCnpjCpf(value) {
-    if (!value) return 'N/A';
-    const cleanedValue = String(value).replace(/\D/g, ''); 
-
-    if (cleanedValue.length === 11) { 
-        return cleanedValue.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else if (cleanedValue.length === 14) { 
-        return cleanedValue.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-    }
-    return value; 
-}
-
-/**
- * Cria um item de detalhe para exibição.
- * @param {string} label O rótulo do detalhe.
- * @param {string|number} value O valor do detalhe.
- * @returns {string} O HTML do item de detalhe.
- */
-export function createDetailItem(label, value) {
-    if (!value && typeof value !== 'boolean' && value !== 0) return '';
-    return `<div class="bg-gray-50 p-3 rounded-lg"><p class="text-sm font-medium text-gray-500">${label}</p><p class="text-lg text-gray-800">${value}</p></div>`;
-}
-
-/**
- * Cria uma pílula de status para exibição.
- * @param {string} status O status (ok, baixo, excesso, indefinido).
- * @returns {string} O HTML da pílula de status.
- */
-export function createStatusPill(status) {
-    const styles = { ok: 'bg-green-100 text-green-800', baixo: 'bg-yellow-100 text-yellow-800', excesso: 'bg-red-100 text-red-800', indefinido: 'bg-gray-100 text-gray-800' };
-    const text = { ok: 'OK', baixo: 'Baixo', excesso: 'Excesso', indefinido: 'N/A' };
-    return `<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${styles[status]}">${text[status]}</span>`;
-}
+init();
