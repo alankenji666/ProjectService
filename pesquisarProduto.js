@@ -59,22 +59,27 @@ const PesquisarProduto = (function() {
      * Manipula o clique em um item da lista de produtos.
      * @param {MouseEvent} event - O evento de clique.
      */
-    function _handleProductClick(event) {
-        const productItem = event.target.closest('.product-item');
-        if (!productItem) return;
-
-        const productId = productItem.dataset.productId;
-        _activeProductId = productId;
-
-        // Remove a classe 'active' de todos os itens e a adiciona ao item clicado
-        document.querySelectorAll('.product-item').forEach(item => item.classList.remove('active'));
-        productItem.classList.add('active');
-
-        const product = _allProducts.find(p => String(p.id) === String(productId));
-        if (product) {
-            _renderProductDetails(product);
-        }
+ function _handleProductClick(event) {
+    const productItem = event.target.closest('.product-item');
+    if (!productItem || !_allProducts || _allProducts.length === 0) {
+        console.error("Erro: _allProducts está vazio ou não definido.");
+        return;
     }
+
+    const productId = productItem.dataset.productId;
+    _activeProductId = productId;
+
+    // Remove a classe 'active' de todos os itens e a adiciona ao item clicado
+    document.querySelectorAll('.product-item').forEach(item => item.classList.remove('active'));
+    productItem.classList.add('active');
+
+    const product = _allProducts.find(p => String(p.id) === String(productId));
+    if (product) {
+        _renderProductDetails(product);
+    } else {
+        console.error(`Produto com ID ${productId} não encontrado em _allProducts.`);
+    }
+}
 
     // --- Funções Públicas ---
     
@@ -118,9 +123,14 @@ const PesquisarProduto = (function() {
      * @param {object} config - Objeto de configuração.
      */
     function init(config) {
+        console.log("Inicializando PesquisarProduto com config:", config);
         _allProducts = config.allProducts;
         _dom = config.domElements;
         _utils = config.utilities;
+
+        if (!_allProducts || _allProducts.length === 0) {
+            console.warn("Aviso: _allProducts está vazio ou não foi passado corretamente.");
+        }
 
         if (_dom.product_list_container) {
             // Listener para cliques nos itens da lista
@@ -146,3 +156,36 @@ const PesquisarProduto = (function() {
         render
     };
 })();
+
+async function init() {
+    _cacheDomElements();
+    _bindEvents();
+    _setDefaultDateFilters();
+
+    try {
+        await _fetchData(); // Aguarde o carregamento dos dados
+        if (typeof PesquisarProduto !== 'undefined') {
+            PesquisarProduto.init({
+                allProducts: _allProducts, // Use _allProducts, que é preenchido no _fetchData
+                domElements: {
+                    product_list_container: document.getElementById('product-list-container'),
+                    product_details_container: document.getElementById('product-details-container'),
+                    details_placeholder: document.getElementById('details-placeholder'),
+                    product_details: document.getElementById('product-details')
+                },
+                utilities: {
+                    createDetailItem: createDetailItem,
+                    showImagePreview: _showImagePreview,
+                    hideImagePreview: _hideImagePreview
+                }
+            });
+        } else {
+            console.error("Erro: Módulo PesquisarProduto não foi carregado corretamente.");
+            _showMessageModal("Erro de Carregamento", "Não foi possível carregar o módulo de pesquisa de produtos.");
+        }
+    } catch (error) {
+        console.error("Erro ao inicializar a aplicação:", error);
+    }
+}
+
+init();
