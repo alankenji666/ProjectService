@@ -63,61 +63,6 @@ const PesquisarProduto = (function() {
         _dom.product_details.classList.add('hidden');
         _dom.details_placeholder.classList.remove('hidden');
     }
-
-    /**
-     * Mostra uma pré-visualização ampliada da imagem do produto.
-     * A posição do tooltip é ajustada dinamicamente para garantir que ele permaneça visível na tela.
-     * @param {MouseEvent} event - O evento do mouse (mouseover) que acionou a função.
-     */
-    function _showImagePreview(event) {
-        const imgElement = event.target;
-        const imageUrl = imgElement.dataset.imageUrl;
-
-        if (!imageUrl || imageUrl.includes('placehold.co')) return;
-
-        if (_dom.customProductTooltip) {
-            _dom.customProductTooltip.innerHTML = `<img src="${imageUrl}" alt="Pré-visualização">`;
-            
-            const rect = imgElement.getBoundingClientRect();
-            
-            _dom.customProductTooltip.style.left = `${rect.right + 15}px`;
-
-            _dom.customProductTooltip.style.visibility = 'hidden';
-            _dom.customProductTooltip.classList.remove('hidden');
-            const tooltipHeight = _dom.customProductTooltip.offsetHeight;
-            
-            let topPos = rect.top;
-
-            if (topPos + tooltipHeight > window.innerHeight) {
-                topPos = window.innerHeight - tooltipHeight - 10;
-            }
-
-            if (topPos < 10) {
-                topPos = 10;
-            }
-
-            _dom.customProductTooltip.style.top = `${topPos}px`;
-            
-            _dom.customProductTooltip.style.visibility = 'visible';
-            void _dom.customProductTooltip.offsetWidth;
-            _dom.customProductTooltip.style.opacity = '1';
-        }
-    }
-
-    /**
-     * Esconde a pré-visualização da imagem do produto com uma transição suave.
-     */
-    function _hideImagePreview() {
-        if (_dom.customProductTooltip) {
-            _dom.customProductTooltip.style.opacity = '0';
-            setTimeout(() => {
-                if (_dom.customProductTooltip.style.opacity === '0') {
-                    _dom.customProductTooltip.classList.add('hidden');
-                    _dom.customProductTooltip.innerHTML = '';
-                }
-            }, 200);
-        }
-    }
     
     /**
      * Manipula o evento de clique em um item da lista de produtos.
@@ -140,44 +85,18 @@ const PesquisarProduto = (function() {
     }
 
     /**
-     * Adiciona os listeners de eventos ao container da lista de produtos.
-     */
-    function _bindEvents() {
-        if (_dom.product_list_container) {
-            _dom.product_list_container.addEventListener('click', _handleProductClick);
-            
-            _dom.product_list_container.addEventListener('mouseover', (event) => {
-                if (event.target.classList.contains('product-list-item-img')) {
-                    _showImagePreview(event);
-                }
-            });
-            _dom.product_list_container.addEventListener('mouseout', (event) => {
-                if (event.target.classList.contains('product-list-item-img')) {
-                    _hideImagePreview();
-                }
-            });
-        }
-    }
-
-    // --- Funções Públicas Expostas pelo Módulo ---
-    
-    /**
      * Renderiza a lista de produtos no painel esquerdo.
      * @param {Array<object>} products - A lista de produtos a ser renderizada.
-     * @param {Array<object>} allProductsData - A lista completa de todos os produtos.
      */
-    function render(products, allProductsData) {
+    function render(products) {
         if (!_dom.product_list_container) return;
-        
-        _allProducts = allProductsData;
-
         if (!products || products.length === 0) {
             _dom.product_list_container.innerHTML = `<div class="p-4 text-center text-gray-500">Nenhum produto encontrado.</div>`;
             _clearDetails();
             return;
         }
 
-        const listHtml = products.map(product => {
+        let listHtml = products.map(product => {
             const imageUrl = product.url_imagens_externas?.[0] || 'https://placehold.co/50x50/e2e8f0/64748b?text=?';
             const isActive = String(product.id) === String(_activeProductId) ? 'active' : '';
 
@@ -199,21 +118,28 @@ const PesquisarProduto = (function() {
     }
 
     /**
-     * Inicializa o módulo.
+     * Inicializa o módulo, cacheando elementos do DOM e configurando listeners.
      * @param {object} config - Objeto de configuração.
      */
     function init(config) {
+        _allProducts = config.allProducts;
         _dom = config.domElements;
         _utils = config.utilities;
-        
-        // Cria o elemento do tooltip e o adiciona ao body
-        if (!_dom.customProductTooltip) {
-            _dom.customProductTooltip = document.createElement('div');
-            _dom.customProductTooltip.id = 'custom-product-tooltip';
-            document.body.appendChild(_dom.customProductTooltip);
-        }
 
-        _bindEvents();
+        if (_dom.product_list_container) {
+            _dom.product_list_container.addEventListener('click', _handleProductClick);
+
+            _dom.product_list_container.addEventListener('mouseover', (event) => {
+                if (event.target.classList.contains('product-list-item-img')) {
+                    _utils.showImagePreview(event);
+                }
+            });
+            _dom.product_list_container.addEventListener('mouseout', (event) => {
+                if (event.target.classList.contains('product-list-item-img')) {
+                    _utils.hideImagePreview();
+                }
+            });
+        }
     }
 
     return {
