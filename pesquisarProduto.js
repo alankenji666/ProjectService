@@ -73,38 +73,33 @@ const PesquisarProduto = (function() {
         const imgElement = event.target;
         const imageUrl = imgElement.dataset.imageUrl;
 
-        // Não exibe a pré-visualização para a imagem placeholder
         if (!imageUrl || imageUrl.includes('placehold.co')) return;
 
         if (_dom.customProductTooltip) {
-            _dom.customProductTooltip.innerHTML = `<img src="${imageUrl}" alt="Pré-visualização" class="max-w-xs max-h-xs rounded-lg shadow-lg">`;
+            _dom.customProductTooltip.innerHTML = `<img src="${imageUrl}" alt="Pré-visualização">`;
             
             const rect = imgElement.getBoundingClientRect();
             
             _dom.customProductTooltip.style.left = `${rect.right + 15}px`;
 
-            // Torna o tooltip temporariamente visível fora da tela para calcular sua altura
             _dom.customProductTooltip.style.visibility = 'hidden';
             _dom.customProductTooltip.classList.remove('hidden');
             const tooltipHeight = _dom.customProductTooltip.offsetHeight;
             
             let topPos = rect.top;
 
-            // Ajusta a posição vertical se o tooltip ultrapassar a borda inferior da janela
             if (topPos + tooltipHeight > window.innerHeight) {
                 topPos = window.innerHeight - tooltipHeight - 10;
             }
 
-            // Garante que o tooltip não suba acima do topo da janela
             if (topPos < 10) {
                 topPos = 10;
             }
 
             _dom.customProductTooltip.style.top = `${topPos}px`;
             
-            // Torna o tooltip visível com uma transição de fade-in
             _dom.customProductTooltip.style.visibility = 'visible';
-            void _dom.customProductTooltip.offsetWidth; // Força um reflow para a transição funcionar
+            void _dom.customProductTooltip.offsetWidth;
             _dom.customProductTooltip.style.opacity = '1';
         }
     }
@@ -120,13 +115,12 @@ const PesquisarProduto = (function() {
                     _dom.customProductTooltip.classList.add('hidden');
                     _dom.customProductTooltip.innerHTML = '';
                 }
-            }, 200); // O tempo deve corresponder à duração da transição CSS
+            }, 200);
         }
     }
     
     /**
      * Manipula o evento de clique em um item da lista de produtos.
-     * Atualiza o estado visual e renderiza os detalhes do produto selecionado.
      * @param {MouseEvent} event - O evento de clique.
      */
     function _handleProductClick(event) {
@@ -136,7 +130,6 @@ const PesquisarProduto = (function() {
         const productId = productItem.dataset.productId;
         _activeProductId = productId;
 
-        // Atualiza a classe 'active' para destacar o item selecionado
         document.querySelectorAll('.product-item').forEach(item => item.classList.remove('active'));
         productItem.classList.add('active');
 
@@ -148,7 +141,6 @@ const PesquisarProduto = (function() {
 
     /**
      * Adiciona os listeners de eventos ao container da lista de produtos.
-     * Utiliza delegação de eventos para otimizar o desempenho.
      */
     function _bindEvents() {
         if (_dom.product_list_container) {
@@ -172,12 +164,11 @@ const PesquisarProduto = (function() {
     /**
      * Renderiza a lista de produtos no painel esquerdo.
      * @param {Array<object>} products - A lista de produtos a ser renderizada.
-     * @param {Array<object>} allProductsData - A lista completa de todos os produtos para referência.
+     * @param {Array<object>} allProductsData - A lista completa de todos os produtos.
      */
     function render(products, allProductsData) {
         if (!_dom.product_list_container) return;
         
-        // Atualiza a referência interna de todos os produtos, caso tenha mudado
         _allProducts = allProductsData;
 
         if (!products || products.length === 0) {
@@ -187,9 +178,7 @@ const PesquisarProduto = (function() {
         }
 
         const listHtml = products.map(product => {
-            const imageUrl = product.url_imagens_externas && product.url_imagens_externas[0] 
-                ? product.url_imagens_externas[0] 
-                : 'https://placehold.co/50x50/e2e8f0/64748b?text=?';
+            const imageUrl = product.url_imagens_externas?.[0] || 'https://placehold.co/50x50/e2e8f0/64748b?text=?';
             const isActive = String(product.id) === String(_activeProductId) ? 'active' : '';
 
             return `
@@ -212,21 +201,25 @@ const PesquisarProduto = (function() {
     /**
      * Inicializa o módulo.
      * @param {object} config - Objeto de configuração.
-     * @param {object} config.domElements - Referências aos elementos do DOM necessários.
-     * @param {object} config.utilities - Funções utilitárias compartilhadas.
      */
     function init(config) {
         _dom = config.domElements;
         _utils = config.utilities;
+        
+        // Cria o elemento do tooltip e o adiciona ao body
+        if (!_dom.customProductTooltip) {
+            _dom.customProductTooltip = document.createElement('div');
+            _dom.customProductTooltip.id = 'custom-product-tooltip';
+            document.body.appendChild(_dom.customProductTooltip);
+        }
+
         _bindEvents();
     }
 
-    // Expõe as funções públicas para serem acessadas de fora do módulo
     return {
         init,
         render
     };
 })();
 
-// Exporta o módulo para ser utilizado com 'import' no arquivo principal
 export default PesquisarProduto;
