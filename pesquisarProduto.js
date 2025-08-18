@@ -166,7 +166,7 @@ async function init() {
         await _fetchData(); // Aguarde o carregamento dos dados
         if (typeof PesquisarProduto !== 'undefined') {
             PesquisarProduto.init({
-                allProducts: _allProducts, // Use _allProducts, que é preenchido no _fetchData
+                allProducts: _allProducts,
                 domElements: {
                     product_list_container: document.getElementById('product-list-container'),
                     product_details_container: document.getElementById('product-details-container'),
@@ -179,6 +179,7 @@ async function init() {
                     hideImagePreview: _hideImagePreview
                 }
             });
+            PesquisarProduto.render(_allProducts); // Renderize os produtos após o carregamento
         } else {
             console.error("Erro: Módulo PesquisarProduto não foi carregado corretamente.");
             _showMessageModal("Erro de Carregamento", "Não foi possível carregar o módulo de pesquisa de produtos.");
