@@ -1,4 +1,4 @@
-const PesquisarProduto = (function() {
+export const PesquisarProduto = (function() {
     // --- Variáveis de estado e configuração ---
     let _allProducts = [];
     let _dom = {};
@@ -42,8 +42,8 @@ const PesquisarProduto = (function() {
                 </div>
             </div>
         `;
-        _dom.details_placeholder.classList.add('hidden');
-        _dom.product_details.classList.remove('hidden');
+        if (_dom.details_placeholder) _dom.details_placeholder.classList.add('hidden');
+        if (_dom.product_details) _dom.product_details.classList.remove('hidden');
     }
 
     /**
@@ -59,27 +59,28 @@ const PesquisarProduto = (function() {
      * Manipula o clique em um item da lista de produtos.
      * @param {MouseEvent} event - O evento de clique.
      */
- function _handleProductClick(event) {
-    const productItem = event.target.closest('.product-item');
-    if (!productItem || !_allProducts || _allProducts.length === 0) {
-        console.error("Erro: _allProducts está vazio ou não definido.");
-        return;
+    function _handleProductClick(event) {
+        const productItem = event.target.closest('.product-item');
+        if (!productItem) return;
+
+        if (!_allProducts || _allProducts.length === 0) {
+            console.error("PesquisarProduto Erro: _allProducts está vazio ou não definido no momento do clique.");
+            return;
+        }
+
+        const productId = productItem.dataset.productId;
+        _activeProductId = productId;
+
+        document.querySelectorAll('.product-item').forEach(item => item.classList.remove('active'));
+        productItem.classList.add('active');
+
+        const product = _allProducts.find(p => String(p.id) === String(productId));
+        if (product) {
+            _renderProductDetails(product);
+        } else {
+            console.error(`Produto com ID ${productId} não encontrado em _allProducts.`);
+        }
     }
-
-    const productId = productItem.dataset.productId;
-    _activeProductId = productId;
-
-    // Remove a classe 'active' de todos os itens e a adiciona ao item clicado
-    document.querySelectorAll('.product-item').forEach(item => item.classList.remove('active'));
-    productItem.classList.add('active');
-
-    const product = _allProducts.find(p => String(p.id) === String(productId));
-    if (product) {
-        _renderProductDetails(product);
-    } else {
-        console.error(`Produto com ID ${productId} não encontrado em _allProducts.`);
-    }
-}
 
     // --- Funções Públicas ---
     
@@ -89,6 +90,7 @@ const PesquisarProduto = (function() {
      */
     function render(products) {
         if (!_dom.product_list_container) return;
+        
         if (!products || products.length === 0) {
             _dom.product_list_container.innerHTML = `<div class="p-4 text-center text-gray-500">Nenhum produto encontrado.</div>`;
             _clearDetails();
@@ -123,27 +125,20 @@ const PesquisarProduto = (function() {
      * @param {object} config - Objeto de configuração.
      */
     function init(config) {
-        console.log("Inicializando PesquisarProduto com config:", config);
-        _allProducts = config.allProducts;
-        _dom = config.domElements;
-        _utils = config.utilities;
-
-        if (!_allProducts || _allProducts.length === 0) {
-            console.warn("Aviso: _allProducts está vazio ou não foi passado corretamente.");
-        }
+        _allProducts = config.allProducts || [];
+        _dom = config.domElements || {};
+        _utils = config.utilities || {};
 
         if (_dom.product_list_container) {
-            // Listener para cliques nos itens da lista
             _dom.product_list_container.addEventListener('click', _handleProductClick);
 
-            // Listener para pré-visualização de imagem (usando delegação de eventos)
             _dom.product_list_container.addEventListener('mouseover', (event) => {
-                if (event.target.classList.contains('product-list-item-img')) {
+                if (event.target.classList.contains('product-list-item-img') && _utils.showImagePreview) {
                     _utils.showImagePreview(event);
                 }
             });
             _dom.product_list_container.addEventListener('mouseout', (event) => {
-                if (event.target.classList.contains('product-list-item-img')) {
+                if (event.target.classList.contains('product-list-item-img') && _utils.hideImagePreview) {
                     _utils.hideImagePreview();
                 }
             });
@@ -156,37 +151,3 @@ const PesquisarProduto = (function() {
         render
     };
 })();
-
-async function init() {
-    _cacheDomElements();
-    _bindEvents();
-    _setDefaultDateFilters();
-
-    try {
-        await _fetchData(); // Aguarde o carregamento dos dados
-        if (typeof PesquisarProduto !== 'undefined') {
-            PesquisarProduto.init({
-                allProducts: _allProducts,
-                domElements: {
-                    product_list_container: document.getElementById('product-list-container'),
-                    product_details_container: document.getElementById('product-details-container'),
-                    details_placeholder: document.getElementById('details-placeholder'),
-                    product_details: document.getElementById('product-details')
-                },
-                utilities: {
-                    createDetailItem: createDetailItem,
-                    showImagePreview: _showImagePreview,
-                    hideImagePreview: _hideImagePreview
-                }
-            });
-            PesquisarProduto.render(_allProducts); // Renderize os produtos após o carregamento
-        } else {
-            console.error("Erro: Módulo PesquisarProduto não foi carregado corretamente.");
-            _showMessageModal("Erro de Carregamento", "Não foi possível carregar o módulo de pesquisa de produtos.");
-        }
-    } catch (error) {
-        console.error("Erro ao inicializar a aplicação:", error);
-    }
-}
-
-init();
