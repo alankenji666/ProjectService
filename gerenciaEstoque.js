@@ -1,4 +1,4 @@
-// gerenciaEstoque.js
+//2 gerenciaEstoque.js
 
 import { createStatusPill } from './utils.js';
 
