@@ -1,7 +1,7 @@
 // app.js - Módulo Principal da Aplicação
 
 // Importa todos os outros módulos e utilitários necessários
-import { debounce, addBusinessDays, getBusinessDaysDifference, createNFeCard } from './utils.js';
+import { debounce, addBusinessDays, getBusinessDaysDifference, createDetailItem, createNFeCard } from './utils.js';
 import { PesquisarProduto } from './pesquisarProduto.js';
 import { Dashboards } from './dashBoardVendas.js';
 import { ConferenciaNFe } from './conferenciaNFe.js';
