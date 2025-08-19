@@ -113,3 +113,25 @@ export function createStatusPill(status) {
     const text = { ok: 'OK', baixo: 'Baixo', excesso: 'Excesso', indefinido: 'N/A' };
     return `<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${styles[status]}">${text[status]}</span>`;
 }
+
+/**
+ * NOVO: Cria um card de resumo para as telas de NFe e Dashboard.
+ * @param {string} id - O identificador para o card (usado em data-id).
+ * @param {string} title - O título do card.
+ * @param {number} count - A contagem de notas.
+ * @param {number} totalValue - O valor monetário total.
+ * @param {string} color - A classe de cor de fundo do Tailwind CSS (ex: 'bg-green-500').
+ * @param {boolean} [isActive=false] - Se o card deve ter o estilo de 'ativo'.
+ * @returns {string} O HTML do card.
+ */
+export function createNFeCard(id, title, count, totalValue, color, isActive = false) {
+    const valueFormatted = (totalValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const activeClass = isActive ? 'active ring-4 ring-offset-2 ring-blue-400' : '';
+    return `<div data-id="${id}" class="${color} text-white p-4 rounded-lg shadow-lg flex flex-col justify-between ${activeClass}">
+                <div>
+                    <h3 class="text-md font-semibold">${title}</h3>
+                    <p class="text-sm">Total de Notas: ${count}</p>
+                </div>
+                <p class="text-2xl font-bold mt-2 self-end">${valueFormatted}</p>
+            </div>`;
+}
