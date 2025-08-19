@@ -1,5 +1,3 @@
-//2 gerenciaEstoque.js
-
 import { createStatusPill } from './utils.js';
 
 export const GerenciarEstoque = (function() {
@@ -94,7 +92,7 @@ export const GerenciarEstoque = (function() {
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', (event) => {
                 const isChecked = event.target.checked;
-                const paginatedProducts = _getPaginatedProducts();
+                const paginatedProducts = _getPaginatedProducts(statusFilteredProducts);
                 paginatedProducts.forEach(p => {
                     _callbacks.toggleProductSelection(p.id, isChecked);
                 });
@@ -229,9 +227,15 @@ export const GerenciarEstoque = (function() {
         _dom.pageReport.querySelectorAll('.remove-item-btn').forEach(button => {
             button.addEventListener('click', (event) => {
                 const productIdToRemove = event.target.dataset.productId;
-                _callbacks.toggleProductSelection(productIdToRemove, false); // Desmarca o item
+                _callbacks.toggleProductSelection(productIdToRemove, false); 
                 _reportQuantities.delete(productIdToRemove); 
-                render(_callbacks.getFilteredProducts(), _callbacks.getAguardandoMap(), _callbacks.getSelectedItems());
+                render(_callbacks.getFilteredProducts(), _callbacks.getAguardandoMap(), _callbacks.getSelectedItems(), _callbacks.getAllProducts());
+            });
+        });
+
+        _dom.pageReport.querySelectorAll('.report-quantity-input').forEach(input => {
+            input.addEventListener('change', (event) => {
+                updateReportQuantity(event.target.dataset.productId, event.target.value);
             });
         });
 
@@ -324,7 +328,7 @@ export const GerenciarEstoque = (function() {
         if (_currentView === 'stock') {
             _renderStockPage(productsToRender, aguardandoMap, selectedStockItems);
         } else if (_currentView === 'report') {
-            _renderReportPage(allProducts, selectedItems, aguardandoMap);
+            _renderReportPage(allProducts, selectedStockItems, aguardandoMap);
         }
     }
     
@@ -368,7 +372,8 @@ export const GerenciarEstoque = (function() {
             showPage: config.callbacks.showPage,
             getFilteredProducts: config.callbacks.getFilteredProducts,
             getAguardandoMap: config.callbacks.getAguardandoMap,
-            getSelectedItems: config.callbacks.getSelectedItems
+            getSelectedItems: config.callbacks.getSelectedItems,
+            getAllProducts: config.callbacks.getAllProducts
         };
     }
 
