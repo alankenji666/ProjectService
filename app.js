@@ -1,5 +1,12 @@
 // app.js - Módulo Principal da Aplicação
 
+// Importa todos os outros módulos e utilitários necessários
+import { debounce, addBusinessDays, getBusinessDaysDifference, createNFeCard } from './utils.js';
+import { PesquisarProduto } from './pesquisarProduto.js';
+import { Dashboards } from './dashBoardVendas.js';
+import { ConferenciaNFe } from './conferenciaNFe.js';
+import { GerenciarEstoque } from './gerenciaEstoque.js';
+
 export const App = (function() {
     // --- URLs e Módulos (serão recebidos na inicialização) ---
     let _urls = {};
@@ -541,7 +548,7 @@ export const App = (function() {
                     details_placeholder: document.getElementById('details-placeholder'),
                     product_details: document.getElementById('product-details')
                 },
-                utilities: { createDetailItem, showImagePreview: _showImagePreview, hideImagePreview: _hideImagePreview }
+                utilities: { createDetailItem: _modules.utils.createDetailItem, showImagePreview: _showImagePreview, hideImagePreview: _hideImagePreview }
             });
             _modules.Dashboards.init({
                 allNFeData: _allNFeData,
