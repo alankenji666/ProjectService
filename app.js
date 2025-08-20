@@ -464,7 +464,7 @@ export const App = (function() {
     }
 
     function _bindEvents() {
-        const debouncedApplyGlobalFilters = debounce(_applyGlobalFilters, 300);
+        const debouncedApplyGlobalFilters = _modules.utils.debounce(_applyGlobalFilters, 300);
 
         _dom.navLinks.pesquisar.addEventListener('click', () => _showPage('pesquisar'));
         _dom.navLinks.estoque.addEventListener('click', () => _showPage('estoque'));
